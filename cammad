@@ -1,0 +1,4 @@
+go get go.mongodb.org/mongo-driver/mongo
+go mod init <your-module-name>
+go list -m all
+go get github.com/rs/cors
