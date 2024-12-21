@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -157,91 +156,68 @@ func login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-// Decode function to verify and decode JWT from the Authorization header
-func Decode(w http.ResponseWriter, r *http.Request) {
-	// Get the token from the Authorization header
+// Middleware for verifying JWT token
+func verifyToken(w http.ResponseWriter, r *http.Request) (*Claims, bool) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-		return
+		return nil, false
 	}
 
-	// Extract the token from the Bearer token format
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	// Extract token from header
+	tokenString := authHeader[len("Bearer "):]
 
-	// Validate the token
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
 
 	if err != nil || !token.Valid {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
+		return nil, false
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || claims.StandardClaims.ExpiresAt < time.Now().Unix() {
 		http.Error(w, "Token is expired", http.StatusUnauthorized)
-		return
+		return nil, false
 	}
 
-	// Return the user information
-	response := map[string]interface{}{
-		"username": claims.Username,
-		"email":    claims.Email,
-		"age":      claims.Age,
-		"gender":   claims.Gender,
-		"password": claims.Password,
-	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	return claims, true
 }
 
-// Contactus function with JWT token validation
+// Contact Us handler
 func contactus(w http.ResponseWriter, r *http.Request) {
-	// Extract token from Authorization header
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+	// Verify JWT token
+	_, authorized := verifyToken(w, r)
+	if !authorized {
 		return
 	}
 
-	// Extract the token from the Bearer token format
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-
-	// Validate the token
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
-
-	// Proceed with contactus functionality
-	var contact Contactus
-
-	if err := json.NewDecoder(r.Body).Decode(&contact); err != nil {
+	var contactus Contactus
+	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Insert contact form data into MongoDB
-	_, err = usersCollection.InsertOne(context.TODO(), contact)
+	_, err := usersCollection.InsertOne(context.TODO(), contactus)
 	if err != nil {
 		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(contact)
+	json.NewEncoder(w).Encode(contactus)
 }
 
-// Booking function
+// Booking handler
 func BookingD(w http.ResponseWriter, r *http.Request) {
-	var booking Booking
+	// Verify JWT token
+	_, authorized := verifyToken(w, r)
+	if !authorized {
+		return
+	}
 
+	var booking Booking
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -261,11 +237,11 @@ func BookingD(w http.ResponseWriter, r *http.Request) {
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "hello go from vercel !!!!",
+		"message": "Hello, Go from Vercel!",
 	})
 }
 
-// Handler function to route API requests
+// Main handler to route requests
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
@@ -278,12 +254,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},  // Allows all origins (for testing purposes)
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders: []string{"Authorization", "Content-Type"},
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}).Handler(router)
-	
 
 	// Serve the request
 	corsHandler.ServeHTTP(w, r)
