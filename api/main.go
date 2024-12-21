@@ -5,12 +5,20 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
+
+type user struct{
+	Username string `json:"username"`
+	Email string `json:"email"`
+	Password string `json:"password"`
+	Age string `json"age"`
+	Gender string `json:"gender"`
+}
 
 var (
 	mongoURI       = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -27,6 +35,49 @@ func init() {
 	}
 	usersCollection = client.Database("test").Collection("users")
 	log.Println("Connected to MongoDB")
+}
+
+func sigup(w http.ResponseWriter, r *http.Request) {
+	
+var User user
+
+
+if err :=json.NewDecoder(r.Body).Decode(&User);err !=nil{
+	http.Error(w,"Invalid request body",http.StatusBadRequest)
+	return
+}
+
+var existingUser user
+
+err :=usersCollection.FindOne(context.TODO(),map[string]string{"email":User.Email}).Decode(&existingUser)
+
+if err == nil {
+	http.Error(w,"User already exists",http.StatusBadRequest)
+    return
+}
+
+hashpassword,err :=bcrypt.GenerateFromPassword([]byte(User.Password),bcrypt.DefaultCost)
+	
+
+if  err !=nil {
+	http.Error(w,"Probelm hashpassowrd",http.StatusBadRequest)
+return
+}
+
+User.Password = string(hashpassword)
+
+_,err =usersCollection.InsertOne(context.TODO(),User)
+
+if err!= nil {
+    http.Error(w,"Error inserting user",http.StatusInternalServerError)
+    return
+}
+
+
+
+w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(User)
+
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,3 +103,5 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Serve the request
 	corsHandler.ServeHTTP(w, r)
 }
+
+ 
