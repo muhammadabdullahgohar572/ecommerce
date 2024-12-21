@@ -73,41 +73,6 @@ func init() {
 
 
 
-func contactus(w http.ResponseWriter, r *http.Request) {
-	var contactus Contactus
-
-	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	_, err := usersCollection.InsertOne(context.TODO(), contactus)
-	if err != nil {
-		http.Error(w, "Error inserting user", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(contactus)
-}
-func BookingD(w http.ResponseWriter, r *http.Request) {
-	var BookingD Booking
-
-	if err := json.NewDecoder(r.Body).Decode(&BookingD); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	_, err := usersCollection.InsertOne(context.TODO(), BookingD)
-	if err != nil {
-		http.Error(w, "Error inserting user", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(BookingD)
-}
-
 
 // Signup function
 func signup(w http.ResponseWriter, r *http.Request) {
@@ -226,6 +191,41 @@ func Decode(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+func contactus(w http.ResponseWriter, r *http.Request) {
+	var contactus Contactus
+
+	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := usersCollection.InsertOne(context.TODO(), contactus)
+	if err != nil {
+		http.Error(w, "Error inserting user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(contactus)
+}
+func BookingD(w http.ResponseWriter, r *http.Request) {
+	var BookingD Booking
+
+	if err := json.NewDecoder(r.Body).Decode(&BookingD); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := usersCollection.InsertOne(context.TODO(), BookingD)
+	if err != nil {
+		http.Error(w, "Error inserting user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(BookingD)
 }
 
 // HelloHandler function
