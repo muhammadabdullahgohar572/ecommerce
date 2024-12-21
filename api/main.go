@@ -72,8 +72,7 @@ func init() {
 	log.Println("Connected to MongoDB")
 }
 
-// Signup function
-// Signup function
+
 func signup(w http.ResponseWriter, r *http.Request) {
 	var User user
 
@@ -181,25 +180,25 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(contactus)
 }
 
-// Booking handler
-func BookingD(w http.ResponseWriter, r *http.Request) {
+// // Booking handler
+// func BookingD(w http.ResponseWriter, r *http.Request) {
 	
 
-	var booking Booking
-	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+// 	var booking Booking
+// 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
+// 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+// 		return
+// 	}
 
-	_, err := usersCollection.InsertOne(context.TODO(), booking)
-	if err != nil {
-		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
-		return
-	}
+// 	_, err := usersCollection.InsertOne(context.TODO(), booking)
+// 	if err != nil {
+// 		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(booking)
-}
+// 	w.WriteHeader(http.StatusCreated)
+// 	json.NewEncoder(w).Encode(booking)
+// }
 
 // HelloHandler function
 func helloHandler(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +218,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     router.HandleFunc("/signup", signup).Methods("POST") // No verification here
     router.HandleFunc("/login", login).Methods("POST")
     router.HandleFunc("/contactus", contactus).Methods("POST")
-    router.HandleFunc("/BookingD", BookingD).Methods("POST")
+    // router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
     // Apply CORS middleware
     corsHandler := cors.New(cors.Options{
