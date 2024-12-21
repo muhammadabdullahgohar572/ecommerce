@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -32,6 +33,14 @@ func initMongo() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	initMongo()
 	router := mux.NewRouter()
+
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "hello go from vercel !!!!",
+		})
+	}).Methods("GET")
+	
 	corsHandler :=cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
@@ -40,3 +49,4 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}).Handler(router)
 	corsHandler.ServeHTTP(w, r)
 }
+
