@@ -22,6 +22,14 @@ type user struct {
 	Age      string `json:"age"`
 	Gender   string `json:"gender"`
 }
+type Contactus struct {
+	Name string `json:"Name"`
+	Email    string `json:"email"`
+	Phone_Number string `json:"Phone_Number"`
+	Message      string `json:"Message"`
+
+}
+
 
 // Claims struct represents JWT token claims
 type Claims struct {
@@ -51,6 +59,28 @@ func init() {
 	usersCollection = client.Database("test").Collection("users")
 	log.Println("Connected to MongoDB")
 }
+
+
+
+
+func contactus(w http.ResponseWriter, r *http.Request) {
+	var User Contactus
+
+	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := usersCollection.InsertOne(context.TODO(), User)
+	if err != nil {
+		http.Error(w, "Error inserting user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(User)
+}
+
 
 // Signup function
 func signup(w http.ResponseWriter, r *http.Request) {
@@ -188,8 +218,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/protected/{token}", Decode).Methods("GET")
+	router.HandleFunc("/contactus", contactus).Methods("POST")
 
-	// Apply CORS middleware
+	// Apply CORS middleware   
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
