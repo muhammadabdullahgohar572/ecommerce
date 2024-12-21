@@ -248,8 +248,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "hello go from vercel !!!!",
 	})
 }
-
-// Main Handler function with router setupfunc Handler(w http.ResponseWriter, r *http.Request) {
+func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Define routes for signup, login, and other actions
