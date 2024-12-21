@@ -91,7 +91,9 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 	router.HandleFunc("/", helloHandler).Methods("GET")
+	router.HandleFunc("/sigup", sigup).Methods("POST")
 
+	sigup
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
