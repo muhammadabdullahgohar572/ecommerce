@@ -18,7 +18,7 @@ type user struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Age      string `json"age"`
+	Age      string `json:"age"`
 	Gender   string `json:"gender"`
 }
 
@@ -26,7 +26,7 @@ type Claims struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Age      string `json"age"`
+	Age      string `json:"age"`
 	Gender   string `json:"gender"`
 	jwt.StandardClaims
 }
@@ -70,7 +70,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	hashpassword, err := bcrypt.GenerateFromPassword([]byte(User.Password), bcrypt.DefaultCost)
 
 	if err != nil {
-		http.Error(w, "Probelm hashpassowrd", http.StatusBadRequest)
+		http.Error(w, "Problem hashing password", http.StatusBadRequest)
 		return
 	}
 
@@ -85,7 +85,6 @@ func signup(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(User)
-
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +165,6 @@ func Decode(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
-
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
@@ -182,8 +180,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/protected/{token}",Decode).Methods("GET")
-
+	router.HandleFunc("/protected/{token}", Decode).Methods("GET")
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
