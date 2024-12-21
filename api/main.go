@@ -36,7 +36,8 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func Handler(w http.ResponseWriter, r *http.Request) { // Exported function "Handler"
+// Exported Handler function
+func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 	router.HandleFunc("/", helloHandler).Methods("GET")
 
