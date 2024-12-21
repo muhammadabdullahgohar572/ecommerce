@@ -101,14 +101,18 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-   var existingUser user
-   err:=usersCollection.FindOne(context.TODO(),map[string]string{"email":Loginuser.Email}).Decode(&existingUser)
+	var existingUser user
+	err:=usersCollection.FindOne(context.TODO(),map[string]string{"email":Loginuser.Email}).Decode(&existingUser)
  
 if err!= nil {
     http.Error(w,"User not found",http.StatusNotFound)
     return
 }
 
+if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password));err!= nil {
+	http.Error(w,"Invalid password",http.StatusUnauthorized)
+	return
+}
 
 expireatTime :=time.Now().Add(20 *time.Hour);
 
@@ -128,6 +132,7 @@ Claims:=&Claims{
 
 
 token := jwt.NewWithClaims(jwt.SigningMethodES256, Claims)
+
 tokenString, err := token.SignedString([]byte("jwtSecret"))
 if err!= nil {
     http.Error(w,"Error creating token",http.StatusInternalServerError)
@@ -148,10 +153,6 @@ json.NewEncoder(w).Encode(map[string]string{"token":tokenString})
 
 
 
-if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password));err!= nil {
-    http.Error(w,"Invalid password",http.StatusUnauthorized)
-    return
-}
 
 
 
