@@ -166,40 +166,40 @@ func login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Decode function to validate JWT token
-func Decode(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	tokenString, exists := vars["token"]
-	if !exists || tokenString == "" {
-		http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
-		return
-	}
+// func Decode(w http.ResponseWriter, r *http.Request) {
+// 	vars := mux.Vars(r)
+// 	tokenString, exists := vars["token"]
+// 	if !exists || tokenString == "" {
+// 		http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
+// 		return
+// 	}
 
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
+// 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+// 		return jwtSecret, nil
+// 	})
 
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
+// 	if err != nil || !token.Valid {
+// 		http.Error(w, "Invalid token", http.StatusUnauthorized)
+// 		return
+// 	}
 
-	claims, ok := token.Claims.(*Claims)
-	if !ok || claims.StandardClaims.ExpiresAt < time.Now().Unix() {
-		http.Error(w, "Token is expired", http.StatusUnauthorized)
-		return
-	}
+// 	claims, ok := token.Claims.(*Claims)
+// 	if !ok || claims.StandardClaims.ExpiresAt < time.Now().Unix() {
+// 		http.Error(w, "Token is expired", http.StatusUnauthorized)
+// 		return
+// 	}
 
-	// Return the user information
-	response := map[string]interface{}{
-		"username": claims.Username,
-		"email":    claims.Email,
-		"age":      claims.Age,
-		"gender":   claims.Gender,
-		"password": claims.Password,
-	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
+// 	// Return the user information
+// 	response := map[string]interface{}{
+// 		"username": claims.Username,
+// 		"email":    claims.Email,
+// 		"age":      claims.Age,
+// 		"gender":   claims.Gender,
+// 		"password": claims.Password,
+// 	}
+// 	w.WriteHeader(http.StatusOK)
+// 	json.NewEncoder(w).Encode(response)
+// }
 
 // HelloHandler function
 func helloHandler(w http.ResponseWriter, r *http.Request) {
