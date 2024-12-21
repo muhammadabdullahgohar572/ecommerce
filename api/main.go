@@ -217,7 +217,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/protected/{token}", Decode).Methods("GET")
+	// router.HandleFunc("/protected/{token}", Decode).Methods("GET")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 
 	// Apply CORS middleware   
