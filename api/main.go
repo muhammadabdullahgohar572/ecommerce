@@ -73,17 +73,19 @@ func init() {
 }
 
 // Signup function
+// Signup function
 func signup(w http.ResponseWriter, r *http.Request) {
 	var User user
 
+	// Decode the request body into the User struct
 	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Check if the user already exists in the database
 	var existingUser user
 	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": User.Email}).Decode(&existingUser)
-
 	if err == nil {
 		http.Error(w, "User already exists", http.StatusBadRequest)
 		return
@@ -95,18 +97,18 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Problem hashing password", http.StatusBadRequest)
 		return
 	}
-
 	User.Password = string(hashpassword)
 
-	// Insert new user into MongoDB
+	// Insert the new user into the MongoDB database
 	_, err = usersCollection.InsertOne(context.TODO(), User)
 	if err != nil {
 		http.Error(w, "Error inserting user", http.StatusInternalServerError)
 		return
 	}
 
+	// Respond with the created user's data
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(User)
+	json.NewEncoder(w).Encode(User)  // Return the User struct, not Booking
 }
 
 // Login function
