@@ -242,7 +242,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     router.HandleFunc("/", helloHandler).Methods("GET")
     router.HandleFunc("/signup", signup).Methods("POST")  // Only signup here
     router.HandleFunc("/login", login).Methods("POST")
-    // router.HandleFunc("/protected/{token}", Decode).Methods("GET")  // Token required here, after login
+    router.HandleFunc("/protected/{token}", Decode).Methods("GET")  // Token required here, after login
     router.HandleFunc("/contactus", contactus).Methods("POST")
     router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
