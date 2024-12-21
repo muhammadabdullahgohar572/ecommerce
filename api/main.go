@@ -109,57 +109,35 @@ if err!= nil {
     return
 }
 
-if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password));err!= nil {
-	http.Error(w,"Invalid password",http.StatusUnauthorized)
+// Compare password
+if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password)); err != nil {
+	http.Error(w, "Invalid password", http.StatusUnauthorized)
 	return
 }
 
-expireatTime :=time.Now().Add(20 *time.Hour);
-
-Claims:=&Claims{
+// Now create the token
+expireAtTime := time.Now().Add(20 * time.Hour)
+claims := &Claims{
 	Username: existingUser.Username,
-    Email:    existingUser.Email,
-    Password: existingUser.Password,
-    Age: existingUser.Age,
-    Gender: existingUser.Gender,
-    StandardClaims: jwt.StandardClaims{
-        ExpiresAt: expireatTime.Unix(),
-    },
+	Email:    existingUser.Email,
+	Password: existingUser.Password,
+	Age:      existingUser.Age,
+	Gender:   existingUser.Gender,
+	StandardClaims: jwt.StandardClaims{
+		ExpiresAt: expireAtTime.Unix(),
+	},
 }
 
+token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-
-
-
-token := jwt.NewWithClaims(jwt.SigningMethodES256, Claims)
-
-tokenString, err := token.SignedString([]byte("jwtSecret"))
-if err!= nil {
-    http.Error(w,"Error creating token",http.StatusInternalServerError)
-    return
+tokenString, err := token.SignedString(jwtSecret)
+if err != nil {
+	http.Error(w, "Error creating token", http.StatusInternalServerError)
+	return
 }
 
-
-
-w.WriteHeader(http.StatusCreated)
-
-json.NewEncoder(w).Encode(map[string]string{"token":tokenString})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+w.WriteHeader(http.StatusOK)
+json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 
 
 
