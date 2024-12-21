@@ -74,38 +74,38 @@ func init() {
 
 
 func contactus(w http.ResponseWriter, r *http.Request) {
-	var User Contactus
+	var contactus Contactus
 
-	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	_, err := usersCollection.InsertOne(context.TODO(), User)
+	_, err := usersCollection.InsertOne(context.TODO(), contactus)
 	if err != nil {
 		http.Error(w, "Error inserting user", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(User)
+	json.NewEncoder(w).Encode(contactus)
 }
 func BookingD(w http.ResponseWriter, r *http.Request) {
-	var User Booking
+	var BookingD Booking
 
-	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&BookingD); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	_, err := usersCollection.InsertOne(context.TODO(), User)
+	_, err := usersCollection.InsertOne(context.TODO(), BookingD)
 	if err != nil {
 		http.Error(w, "Error inserting user", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(User)
+	json.NewEncoder(w).Encode(BookingD)
 }
 
 
@@ -246,7 +246,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/protected/{token}", Decode).Methods("GET")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
-	router.HandleFunc("/BookingD", BookingD).Methods("POST")
+	// router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
 
 	// Apply CORS middleware   
