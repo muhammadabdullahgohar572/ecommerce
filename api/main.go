@@ -48,6 +48,16 @@ var (
 	usersCollection *mongo.Collection
 	jwtSecret       = []byte("abdullah")
 )
+type Booking struct {
+	CarType            string `json:"car_type"`
+	PickupLocation     string `json:"pickup_location"`
+	DropoffLocation    string `json:"dropoff_location"`
+	PickupDate         string `json:"pickup_date"`
+	PickupTime         string `json:"pickup_time"`
+	DropoffTime        string `json:"dropoff_time"`
+	BookingID          string `json:"booking_id,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
+}
 
 // Initialize MongoDB connection
 func init() {
@@ -65,6 +75,23 @@ func init() {
 
 func contactus(w http.ResponseWriter, r *http.Request) {
 	var User Contactus
+
+	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := usersCollection.InsertOne(context.TODO(), User)
+	if err != nil {
+		http.Error(w, "Error inserting user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(User)
+}
+func BookingD(w http.ResponseWriter, r *http.Request) {
+	var User Booking
 
 	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -219,6 +246,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/login", login).Methods("POST")
 	// router.HandleFunc("/protected/{token}", Decode).Methods("GET")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
+	router.HandleFunc("/BookingD", BookingD).Methods("POST")
+
 
 	// Apply CORS middleware   
 	corsHandler := cors.New(cors.Options{
