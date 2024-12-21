@@ -124,11 +124,11 @@ Claims:=&Claims{
 }
 
 
-token :=jwt.NewWithClaims(jwt.SigningMethodES256,Claims)
-
-tokenString,err := token.SignedString([]byte("jwtSecret"))
 
 
+
+token := jwt.NewWithClaims(jwt.SigningMethodES256, Claims)
+tokenString, err := token.SignedString([]byte("jwtSecret"))
 if err!= nil {
     http.Error(w,"Error creating token",http.StatusInternalServerError)
     return
