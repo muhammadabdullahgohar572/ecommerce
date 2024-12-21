@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,10 +23,19 @@ type user struct{
 	Gender string `json:"gender"`
 }
 
+type Claims struct {
+	Username string `json:"username"`
+	Email string `json:"email"`
+	Password string `json:"password"`
+	Age string `json"age"`
+	Gender string `json:"gender"`
+	jwt.StandardClaims
+}
 var (
 	mongoURI       = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 	client         *mongo.Client
 	usersCollection *mongo.Collection
+	jwtSecret = []byte("abdullah")
 )
 
 func init() {
@@ -80,6 +92,78 @@ w.WriteHeader(http.StatusCreated)
 
 }
 
+func login(w http.ResponseWriter, r *http.Request) {
+
+
+	var Loginuser user
+	if err :=json.NewDecoder(r.Body).Decode(&Loginuser);err !=nil {
+		http.Error(w,"Invalid request body",http.StatusBadRequest)
+		return
+	}
+
+   var existingUser user
+   err:=usersCollection.FindOne(context.TODO(),map[string]string{"email":Loginuser.Email}).Decode(&existingUser)
+ 
+if err!= nil {
+    http.Error(w,"User not found",http.StatusNotFound)
+    return
+}
+
+
+expireatTime :=time.Now().Add(20 *time.Hour)
+
+Claims=&Claims{
+	Username: existingUser.Username,
+    Email:    existingUser.Email,
+    Password: existingUser.Password,
+    Age: existingUser.Age,
+    Gender: existingUser.Gender,
+    StandardClaims: jwt.StandardClaims{
+        ExpiresAt: expireatTime.Unix(),
+    },
+}
+
+
+token :=jwt.NewWithClaims(jwt.SigningMethodES256,Claims{})
+
+tokenString,err := token.SignedString([]byte("jwtSecret"))
+
+
+if err!= nil {
+    http.Error(w,"Error creating token",http.StatusInternalServerError)
+    return
+}
+
+
+
+w.WriteHeader(http.StatusCreated)
+
+json.NewEncoder(w).Encode(map[string]string{"token":tokenString})
+
+
+
+
+
+
+
+
+
+if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password));err!= nil {
+    http.Error(w,"Invalid password",http.StatusUnauthorized)
+    return
+}
+
+
+
+
+
+
+
+
+
+
+}
+
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -92,7 +176,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
+	router.HandleFunc("/login", login).Methods("POST")
 
+	
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
