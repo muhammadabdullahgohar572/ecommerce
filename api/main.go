@@ -156,42 +156,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-// Middleware for verifying JWT token
-func verifyToken(w http.ResponseWriter, r *http.Request) (*Claims, bool) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-		return nil, false
-	}
 
-	// Extract token from header
-	tokenString := authHeader[len("Bearer "):]
 
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
 
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return nil, false
-	}
-
-	claims, ok := token.Claims.(*Claims)
-	if !ok || claims.StandardClaims.ExpiresAt < time.Now().Unix() {
-		http.Error(w, "Token is expired", http.StatusUnauthorized)
-		return nil, false
-	}
-
-	return claims, true
-}
-
-// Contact Us handler
 func contactus(w http.ResponseWriter, r *http.Request) {
-	// Verify JWT token
-	_, authorized := verifyToken(w, r)
-	if !authorized {
-		return
-	}
+	
+
 
 	var contactus Contactus
 	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
@@ -211,11 +181,7 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 
 // Booking handler
 func BookingD(w http.ResponseWriter, r *http.Request) {
-	// Verify JWT token
-	_, authorized := verifyToken(w, r)
-	if !authorized {
-		return
-	}
+	
 
 	var booking Booking
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
