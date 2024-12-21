@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// User struct to represent the user data
 type user struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -22,6 +23,7 @@ type user struct {
 	Gender   string `json:"gender"`
 }
 
+// Claims struct represents JWT token claims
 type Claims struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -31,6 +33,7 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+// MongoDB client and JWT secret
 var (
 	mongoURI        = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 	client          *mongo.Client
@@ -38,8 +41,8 @@ var (
 	jwtSecret       = []byte("abdullah")
 )
 
+// Initialize MongoDB connection
 func init() {
-	// Initialize MongoDB connection once
 	var err error
 	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoURI))
 	if err != nil {
@@ -49,8 +52,8 @@ func init() {
 	log.Println("Connected to MongoDB")
 }
 
+// Signup function
 func signup(w http.ResponseWriter, r *http.Request) {
-
 	var User user
 
 	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
@@ -59,7 +62,6 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var existingUser user
-
 	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": User.Email}).Decode(&existingUser)
 
 	if err == nil {
@@ -67,8 +69,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hash the password
 	hashpassword, err := bcrypt.GenerateFromPassword([]byte(User.Password), bcrypt.DefaultCost)
-
 	if err != nil {
 		http.Error(w, "Problem hashing password", http.StatusBadRequest)
 		return
@@ -76,8 +78,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 
 	User.Password = string(hashpassword)
 
+	// Insert new user into MongoDB
 	_, err = usersCollection.InsertOne(context.TODO(), User)
-
 	if err != nil {
 		http.Error(w, "Error inserting user", http.StatusInternalServerError)
 		return
@@ -87,8 +89,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(User)
 }
 
+// Login function
 func login(w http.ResponseWriter, r *http.Request) {
-
 	var Loginuser user
 	if err := json.NewDecoder(r.Body).Decode(&Loginuser); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -97,7 +99,6 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	var existingUser user
 	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": Loginuser.Email}).Decode(&existingUser)
-
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -109,7 +110,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Now create the token
+	// Create JWT token
 	expireAtTime := time.Now().Add(20 * time.Hour)
 	claims := &Claims{
 		Username: existingUser.Username,
@@ -134,6 +135,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
+// Decode function to validate JWT token
 func Decode(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tokenString, exists := vars["token"]
@@ -141,7 +143,8 @@ func Decode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
 		return
 	}
-	token, err := jwt.ParseWithClaims(tokenString, Claims{}, func(t *jwt.Token) (interface{}, error) {
+
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
 
@@ -156,6 +159,7 @@ func Decode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Return the user information
 	response := map[string]interface{}{
 		"username": claims.Username,
 		"email":    claims.Email,
@@ -167,6 +171,7 @@ func Decode(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// HelloHandler function
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -174,9 +179,11 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Exported Handler function
+// Main Handler function with router setup
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
+
+	// Define routes
 	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", login).Methods("POST")
