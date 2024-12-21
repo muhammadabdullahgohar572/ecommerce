@@ -278,11 +278,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowedOrigins: []string{"*"},  // Allows all origins (for testing purposes)
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
 	}).Handler(router)
+	
 
 	// Serve the request
 	corsHandler.ServeHTTP(w, r)
