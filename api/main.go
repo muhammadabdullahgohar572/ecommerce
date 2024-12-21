@@ -3,15 +3,17 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // User struct to represent the user data
@@ -22,14 +24,13 @@ type user struct {
 	Age      string `json:"age"`
 	Gender   string `json:"gender"`
 }
+
 type Contactus struct {
-	Name string `json:"Name"`
-	Email    string `json:"email"`
+	Name         string `json:"Name"`
+	Email        string `json:"email"`
 	Phone_Number string `json:"Phone_Number"`
 	Message      string `json:"Message"`
-
 }
-
 
 // Claims struct represents JWT token claims
 type Claims struct {
@@ -48,14 +49,15 @@ var (
 	usersCollection *mongo.Collection
 	jwtSecret       = []byte("abdullah")
 )
+
 type Booking struct {
-	CarType            string `json:"car_type"`
-	PickupLocation     string `json:"pickup_location"`
-	DropoffLocation    string `json:"dropoff_location"`
-	PickupDate         string `json:"pickup_date"`
-	PickupTime         string `json:"pickup_time"`
-	DropoffTime        string `json:"dropoff_time"`
-	BookingID          string `json:"booking_id,omitempty"`
+	CarType            string    `json:"car_type"`
+	PickupLocation     string    `json:"pickup_location"`
+	DropoffLocation    string    `json:"dropoff_location"`
+	PickupDate         string    `json:"pickup_date"`
+	PickupTime         string    `json:"pickup_time"`
+	DropoffTime        string    `json:"dropoff_time"`
+	BookingID          string    `json:"booking_id,omitempty"`
 	CreatedAt          time.Time `json:"created_at"`
 }
 
@@ -70,22 +72,19 @@ func init() {
 	log.Println("Connected to MongoDB")
 }
 
-
-
-
-
 // Signup function
 func signup(w http.ResponseWriter, r *http.Request) {
 	var User user
 
+	// Decode the incoming request body
 	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Check if the user already exists based on email
 	var existingUser user
-	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": User.Email}).Decode(&existingUser)
-
+	err := usersCollection.FindOne(context.TODO(), bson.M{"email": User.Email}).Decode(&existingUser)
 	if err == nil {
 		http.Error(w, "User already exists", http.StatusBadRequest)
 		return
@@ -97,18 +96,31 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Problem hashing password", http.StatusBadRequest)
 		return
 	}
-
 	User.Password = string(hashpassword)
 
-	// Insert new user into MongoDB
+	// Insert the new user into MongoDB
 	_, err = usersCollection.InsertOne(context.TODO(), User)
 	if err != nil {
+		log.Printf("Error inserting user: %v", err)
 		http.Error(w, "Error inserting user", http.StatusInternalServerError)
 		return
 	}
 
+	// Return the created user (excluding the password)
+	response := struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Age      string `json:"age"`
+		Gender   string `json:"gender"`
+	}{
+		Username: User.Username,
+		Email:    User.Email,
+		Age:      User.Age,
+		Gender:   User.Gender,
+	}
+
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(User)
+	json.NewEncoder(w).Encode(response)
 }
 
 // Login function
@@ -119,14 +131,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Find the user by email
 	var existingUser user
-	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": Loginuser.Email}).Decode(&existingUser)
+	err := usersCollection.FindOne(context.TODO(), bson.M{"email": Loginuser.Email}).Decode(&existingUser)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	// Compare password
+	// Compare the password with the stored hashed password
 	if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
@@ -156,7 +169,6 @@ func login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
-
 
 func Decode(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -203,29 +215,30 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 
 	_, err := usersCollection.InsertOne(context.TODO(), contactus)
 	if err != nil {
-		http.Error(w, "Error inserting user", http.StatusInternalServerError)
+		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(contactus)
 }
-func BookingD(w http.ResponseWriter, r *http.Request) {
-	var BookingD Booking
 
-	if err := json.NewDecoder(r.Body).Decode(&BookingD); err != nil {
+func BookingD(w http.ResponseWriter, r *http.Request) {
+	var booking Booking
+
+	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	_, err := usersCollection.InsertOne(context.TODO(), BookingD)
+	_, err := usersCollection.InsertOne(context.TODO(), booking)
 	if err != nil {
-		http.Error(w, "Error inserting user", http.StatusInternalServerError)
+		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(BookingD)
+	json.NewEncoder(w).Encode(booking)
 }
 
 // HelloHandler function
@@ -246,10 +259,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/protected/{token}", Decode).Methods("GET")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
-	// router.HandleFunc("/BookingD", BookingD).Methods("POST")
+	router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
-
-	// Apply CORS middleware   
+	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
