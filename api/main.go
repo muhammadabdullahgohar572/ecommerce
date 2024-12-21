@@ -110,9 +110,9 @@ if err!= nil {
 }
 
 
-expireatTime :=time.Now().Add(20 *time.Hour)
+expireatTime :=time.Now().Add(20 *time.Hour);
 
-Claims=&Claims{
+Claims:=&Claims{
 	Username: existingUser.Username,
     Email:    existingUser.Email,
     Password: existingUser.Password,
@@ -124,7 +124,7 @@ Claims=&Claims{
 }
 
 
-token :=jwt.NewWithClaims(jwt.SigningMethodES256,Claims{})
+token :=jwt.NewWithClaims(jwt.SigningMethodES256,Claims)
 
 tokenString,err := token.SignedString([]byte("jwtSecret"))
 
