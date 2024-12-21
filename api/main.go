@@ -249,15 +249,14 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Main Handler function with router setup
-func Handler(w http.ResponseWriter, r *http.Request) {
+// Main Handler function with router setupfunc Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
-	// Define routes
+	// Define routes for signup, login, and other actions
 	router.HandleFunc("/", helloHandler).Methods("GET")
-	router.HandleFunc("/signup", signup).Methods("POST")
+	router.HandleFunc("/signup", signup).Methods("POST")  // Signup route does not need token
 	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/protected/{token}", Decode).Methods("GET")
+	router.HandleFunc("/protected/{token}", Decode).Methods("GET")  // Decode route expects a token
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 	router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
