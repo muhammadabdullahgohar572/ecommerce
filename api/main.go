@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -26,10 +27,10 @@ type user struct {
 }
 
 type Contactus struct {
-	Name         string `json:"Name"`
+	Name         string `json:"name"`
 	Email        string `json:"email"`
-	Phone_Number string `json:"Phone_Number"`
-	Message      string `json:"Message"`
+	Phone_Number string `json:"phone_number"`
+	Message      string `json:"message"`
 }
 
 // Claims struct represents JWT token claims
@@ -156,15 +157,19 @@ func login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-// Decode function to verify and decode JWT
+// Decode function to verify and decode JWT from the Authorization header
 func Decode(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	tokenString, exists := vars["token"]
-	if !exists || tokenString == "" {
-		http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
+	// Get the token from the Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
 		return
 	}
 
+	// Extract the token from the Bearer token format
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Validate the token
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
@@ -192,7 +197,29 @@ func Decode(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Contactus function with JWT token validation
 func contactus(w http.ResponseWriter, r *http.Request) {
+	// Extract token from Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		return
+	}
+
+	// Extract the token from the Bearer token format
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Validate the token
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// Proceed with contactus functionality
 	var contact Contactus
 
 	if err := json.NewDecoder(r.Body).Decode(&contact); err != nil {
@@ -200,7 +227,8 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := usersCollection.InsertOne(context.TODO(), contact)
+	// Insert contact form data into MongoDB
+	_, err = usersCollection.InsertOne(context.TODO(), contact)
 	if err != nil {
 		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
 		return
@@ -210,6 +238,7 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(contact)
 }
 
+// Booking function
 func BookingD(w http.ResponseWriter, r *http.Request) {
 	var booking Booking
 
@@ -236,15 +265,14 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Handler function to handle routing
+// Handler function to route API requests
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Define routes for signup, login, and other actions
 	router.HandleFunc("/", helloHandler).Methods("GET")
-	router.HandleFunc("/signup", signup).Methods("POST")  // Only signup here
+	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/protected/{token}", Decode).Methods("GET")  // Decode token route
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 	router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
