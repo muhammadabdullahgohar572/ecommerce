@@ -37,7 +37,7 @@ func init() {
 	log.Println("Connected to MongoDB")
 }
 
-func sigup(w http.ResponseWriter, r *http.Request) {
+func signup(w http.ResponseWriter, r *http.Request) {
 	
 var User user
 
@@ -91,8 +91,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 	router.HandleFunc("/", helloHandler).Methods("GET")
-	router.HandleFunc("/sigup",sigup).Methods("POST")
-
+	router.HandleFunc("/signup", signup).Methods("POST")
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
