@@ -3,39 +3,39 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"log"
-	"net/http"
-	"time"
-
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
+	"log"
+	"net/http"
+	"time"
 )
 
-type user struct{
+type user struct {
 	Username string `json:"username"`
-	Email string `json:"email"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
-	Age string `json"age"`
-	Gender string `json:"gender"`
+	Age      string `json"age"`
+	Gender   string `json:"gender"`
 }
 
 type Claims struct {
 	Username string `json:"username"`
-	Email string `json:"email"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
-	Age string `json"age"`
-	Gender string `json:"gender"`
+	Age      string `json"age"`
+	Gender   string `json:"gender"`
 	jwt.StandardClaims
 }
+
 var (
-	mongoURI       = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-	client         *mongo.Client
+	mongoURI        = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+	client          *mongo.Client
 	usersCollection *mongo.Collection
-	jwtSecret = []byte("abdullah")
+	jwtSecret       = []byte("abdullah")
 )
 
 func init() {
@@ -50,96 +50,122 @@ func init() {
 }
 
 func signup(w http.ResponseWriter, r *http.Request) {
-	
-var User user
 
+	var User user
 
-if err :=json.NewDecoder(r.Body).Decode(&User);err !=nil{
-	http.Error(w,"Invalid request body",http.StatusBadRequest)
-	return
-}
+	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
 
-var existingUser user
+	var existingUser user
 
-err :=usersCollection.FindOne(context.TODO(),map[string]string{"email":User.Email}).Decode(&existingUser)
+	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": User.Email}).Decode(&existingUser)
 
-if err == nil {
-	http.Error(w,"User already exists",http.StatusBadRequest)
-    return
-}
+	if err == nil {
+		http.Error(w, "User already exists", http.StatusBadRequest)
+		return
+	}
 
-hashpassword,err :=bcrypt.GenerateFromPassword([]byte(User.Password),bcrypt.DefaultCost)
-	
+	hashpassword, err := bcrypt.GenerateFromPassword([]byte(User.Password), bcrypt.DefaultCost)
 
-if  err !=nil {
-	http.Error(w,"Probelm hashpassowrd",http.StatusBadRequest)
-return
-}
+	if err != nil {
+		http.Error(w, "Probelm hashpassowrd", http.StatusBadRequest)
+		return
+	}
 
-User.Password = string(hashpassword)
+	User.Password = string(hashpassword)
 
-_,err =usersCollection.InsertOne(context.TODO(),User)
+	_, err = usersCollection.InsertOne(context.TODO(), User)
 
-if err!= nil {
-    http.Error(w,"Error inserting user",http.StatusInternalServerError)
-    return
-}
+	if err != nil {
+		http.Error(w, "Error inserting user", http.StatusInternalServerError)
+		return
+	}
 
-
-
-w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(User)
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(User)
 
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
 
-
 	var Loginuser user
-	if err :=json.NewDecoder(r.Body).Decode(&Loginuser);err !=nil {
-		http.Error(w,"Invalid request body",http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&Loginuser); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	var existingUser user
-	err:=usersCollection.FindOne(context.TODO(),map[string]string{"email":Loginuser.Email}).Decode(&existingUser)
- 
-if err!= nil {
-    http.Error(w,"User not found",http.StatusNotFound)
-    return
+	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": Loginuser.Email}).Decode(&existingUser)
+
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	// Compare password
+	if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password)); err != nil {
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		return
+	}
+
+	// Now create the token
+	expireAtTime := time.Now().Add(20 * time.Hour)
+	claims := &Claims{
+		Username: existingUser.Username,
+		Email:    existingUser.Email,
+		Password: existingUser.Password,
+		Age:      existingUser.Age,
+		Gender:   existingUser.Gender,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expireAtTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		http.Error(w, "Error creating token", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-// Compare password
-if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password)); err != nil {
-	http.Error(w, "Invalid password", http.StatusUnauthorized)
-	return
-}
+func Decode(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tokenString, exists := vars["token"]
+	if !exists || tokenString == "" {
+		http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
+		return
+	}
+	token, err := jwt.ParseWithClaims(tokenString, Claims{}, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
 
-// Now create the token
-expireAtTime := time.Now().Add(20 * time.Hour)
-claims := &Claims{
-	Username: existingUser.Username,
-	Email:    existingUser.Email,
-	Password: existingUser.Password,
-	Age:      existingUser.Age,
-	Gender:   existingUser.Gender,
-	StandardClaims: jwt.StandardClaims{
-		ExpiresAt: expireAtTime.Unix(),
-	},
-}
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
 
-token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	claims, ok := token.Claims.(*Claims)
+	if !ok || claims.StandardClaims.ExpiresAt < time.Now().Unix() {
+		http.Error(w, "Token is expired", http.StatusUnauthorized)
+		return
+	}
 
-tokenString, err := token.SignedString(jwtSecret)
-if err != nil {
-	http.Error(w, "Error creating token", http.StatusInternalServerError)
-	return
-}
-
-w.WriteHeader(http.StatusOK)
-json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
-
-
+	response := map[string]interface{}{
+		"username": claims.Username,
+		"email":    claims.Email,
+		"age":      claims.Age,
+		"gender":   claims.Gender,
+		"password": claims.Password,
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 
 }
 
@@ -155,9 +181,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
-	router.HandleFunc("/login", login).Methods("POST")
+	router.HandleFunc("/login/{token}", login).Methods("POST")
 
-	
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -169,5 +194,3 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Serve the request
 	corsHandler.ServeHTTP(w, r)
 }
-
- 
