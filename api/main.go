@@ -72,56 +72,43 @@ func init() {
 	log.Println("Connected to MongoDB")
 }
 
-// Signup function
+// Signup function// Signup function
 func signup(w http.ResponseWriter, r *http.Request) {
-	var User user
+    var User user
 
-	// Decode the incoming request body
-	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+    if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
+        http.Error(w, "Invalid request body", http.StatusBadRequest)
+        return
+    }
 
-	// Check if the user already exists based on email
-	var existingUser user
-	err := usersCollection.FindOne(context.TODO(), bson.M{"email": User.Email}).Decode(&existingUser)
-	if err == nil {
-		http.Error(w, "User already exists", http.StatusBadRequest)
-		return
-	}
+    var existingUser user
+    err := usersCollection.FindOne(context.TODO(), map[string]string{"email": User.Email}).Decode(&existingUser)
 
-	// Hash the password
-	hashpassword, err := bcrypt.GenerateFromPassword([]byte(User.Password), bcrypt.DefaultCost)
-	if err != nil {
-		http.Error(w, "Problem hashing password", http.StatusBadRequest)
-		return
-	}
-	User.Password = string(hashpassword)
+    if err == nil {
+        http.Error(w, "User already exists", http.StatusBadRequest)
+        return
+    }
 
-	// Insert the new user into MongoDB
-	_, err = usersCollection.InsertOne(context.TODO(), User)
-	if err != nil {
-		log.Printf("Error inserting user: %v", err)
-		http.Error(w, "Error inserting user", http.StatusInternalServerError)
-		return
-	}
+    // Hash the password
+    hashpassword, err := bcrypt.GenerateFromPassword([]byte(User.Password), bcrypt.DefaultCost)
+    if err != nil {
+        http.Error(w, "Problem hashing password", http.StatusBadRequest)
+        return
+    }
 
-	// Return the created user (excluding the password)
-	response := struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Age      string `json:"age"`
-		Gender   string `json:"gender"`
-	}{
-		Username: User.Username,
-		Email:    User.Email,
-		Age:      User.Age,
-		Gender:   User.Gender,
-	}
+    User.Password = string(hashpassword)
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+    // Insert new user into MongoDB
+    _, err = usersCollection.InsertOne(context.TODO(), User)
+    if err != nil {
+        http.Error(w, "Error inserting user", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(User)
 }
+
 
 // Login function
 func login(w http.ResponseWriter, r *http.Request) {
@@ -249,24 +236,24 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 func Handler(w http.ResponseWriter, r *http.Request) {
-	router := mux.NewRouter()
+    router := mux.NewRouter()
 
-	// Define routes for signup, login, and other actions
-	router.HandleFunc("/", helloHandler).Methods("GET")
-	router.HandleFunc("/signup", signup).Methods("POST")  // Signup route does not need token
-	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/protected/{token}", Decode).Methods("GET")  // Decode route expects a token
-	router.HandleFunc("/contactus", contactus).Methods("POST")
-	router.HandleFunc("/BookingD", BookingD).Methods("POST")
+    // Define routes for signup, login, and other actions
+    router.HandleFunc("/", helloHandler).Methods("GET")
+    router.HandleFunc("/signup", signup).Methods("POST")  // Only signup here
+    router.HandleFunc("/login", login).Methods("POST")
+    router.HandleFunc("/protected/{token}", Decode).Methods("GET")  // Token required here, after login
+    router.HandleFunc("/contactus", contactus).Methods("POST")
+    router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
-	// Apply CORS middleware
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
-		AllowCredentials: true,
-	}).Handler(router)
+    // Apply CORS middleware
+    corsHandler := cors.New(cors.Options{
+        AllowedOrigins:   []string{"*"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+        AllowedHeaders:   []string{"Authorization", "Content-Type"},
+        AllowCredentials: true,
+    }).Handler(router)
 
-	// Serve the request
-	corsHandler.ServeHTTP(w, r)
+    // Serve the request
+    corsHandler.ServeHTTP(w, r)
 }
