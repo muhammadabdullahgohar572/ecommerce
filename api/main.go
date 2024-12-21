@@ -93,7 +93,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/sigup", sigup).Methods("POST")
 
-	sigup
+
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
