@@ -242,24 +242,26 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Main handler to route requests
+// Main handler to route requests
 func Handler(w http.ResponseWriter, r *http.Request) {
-	router := mux.NewRouter()
+    router := mux.NewRouter()
 
-	// Define routes for signup, login, and other actions
-	router.HandleFunc("/", helloHandler).Methods("GET")
-	router.HandleFunc("/signup", signup).Methods("POST")
-	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/contactus", contactus).Methods("POST")
-	router.HandleFunc("/BookingD", BookingD).Methods("POST")
+    // Define routes for signup, login, and other actions
+    router.HandleFunc("/", helloHandler).Methods("GET")
+    router.HandleFunc("/signup", signup).Methods("POST") // No verification here
+    router.HandleFunc("/login", login).Methods("POST")
+    router.HandleFunc("/contactus", contactus).Methods("POST")
+    router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
-	// Apply CORS middleware
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
-		AllowCredentials: true,
-	}).Handler(router)
+    // Apply CORS middleware
+    corsHandler := cors.New(cors.Options{
+        AllowedOrigins:   []string{"*"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+        AllowedHeaders:   []string{"Authorization", "Content-Type"},
+        AllowCredentials: true,
+    }).Handler(router)
 
-	// Serve the request
-	corsHandler.ServeHTTP(w, r)
+    // Serve the request
+    corsHandler.ServeHTTP(w, r)
 }
+
