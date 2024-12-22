@@ -163,8 +163,9 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
-	_, err := usersCollection.InsertOne(context.TODO(), contactus)
+	contactCollection := client.Database("test").Collection("contactus")
+	
+	_, err := contactCollection.InsertOne(context.TODO(), contactus)
 	if err != nil {
 		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
 		return
@@ -225,7 +226,7 @@ func decodeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-"message":     "Welcome to the protected route",
+       "message":     "Welcome to the protected route",
 		"Email":    claims.Email,
 		"username": claims.Username,
 		"Password": claims.Password,
@@ -246,7 +247,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/signup", signup).Methods("POST") // No verification here
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
-	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("POST")
+	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
 
 	// router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
