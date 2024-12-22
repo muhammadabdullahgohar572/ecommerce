@@ -57,8 +57,6 @@ type Booking struct {
 	PickupDate      string    `json:"pickup_date"`
 	PickupTime      string    `json:"pickup_time"`
 	DropoffTime     string    `json:"dropoff_time"`
-	BookingID       string    `json:"booking_id,omitempty"`
-	CreatedAt       time.Time `json:"created_at"`
 }
 
 // Initialize MongoDB connection
@@ -70,6 +68,25 @@ func init() {
 	}
 	usersCollection = client.Database("test").Collection("users")
 	log.Println("Connected to MongoDB")
+}
+
+func BookingOrder(w http.ResponseWriter, r *http.Request) {
+
+	var Booking Booking
+	if err := json.NewDecoder(r.Body).Decode(&Booking); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	BookingCollection := client.Database("test").Collection("contactus")
+	
+	_, err := BookingCollection.InsertOne(context.TODO(), Booking)
+	if err != nil {
+		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(Booking)
 }
 
 func signup(w http.ResponseWriter, r *http.Request) {
@@ -175,43 +192,10 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(contactus)
 }
 
-// Booking handler
-func BookingD(w http.ResponseWriter, r *http.Request) {
-    var booking Booking
-
-    // Decode the JSON request
-    if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-        http.Error(w, "Invalid request body", http.StatusBadRequest)
-        return
-    }
-
-    // Validate required fields
-    if booking.CarType == "" || booking.PickupLocation == "" || booking.DropoffLocation == "" {
-        http.Error(w, "All fields are required", http.StatusBadRequest)
-        return
-    }
-
-    // Set the CreatedAt timestamp
-    booking.CreatedAt = time.Now()
-
-    // Insert booking into MongoDB
-    bookingCollection := client.Database("test").Collection("booking")
-    _, err := bookingCollection.InsertOne(context.TODO(), booking)
-    if err != nil {
-        http.Error(w, "Error inserting booking", http.StatusInternalServerError)
-        return
-    }
-
-    // Respond with the created booking data
-    w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "status": "success",
-        "data":   booking,
-    })
-}
 
 
-// HelloHandler function
+
+
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -265,8 +249,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
+	
+	router.HandleFunc("/Booking", BookingOrder).Methods("POST")
 
-	router.HandleFunc("/BookingD", BookingD).Methods("POST")
+	// router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
