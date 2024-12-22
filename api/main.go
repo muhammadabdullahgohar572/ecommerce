@@ -51,14 +51,14 @@ var (
 )
 
 type Booking struct {
-	CarType            string    `json:"car_type"`
-	PickupLocation     string    `json:"pickup_location"`
-	DropoffLocation    string    `json:"dropoff_location"`
-	PickupDate         string    `json:"pickup_date"`
-	PickupTime         string    `json:"pickup_time"`
-	DropoffTime        string    `json:"dropoff_time"`
-	BookingID          string    `json:"booking_id,omitempty"`
-	CreatedAt          time.Time `json:"created_at"`
+	CarType         string    `json:"car_type"`
+	PickupLocation  string    `json:"pickup_location"`
+	DropoffLocation string    `json:"dropoff_location"`
+	PickupDate      string    `json:"pickup_date"`
+	PickupTime      string    `json:"pickup_time"`
+	DropoffTime     string    `json:"dropoff_time"`
+	BookingID       string    `json:"booking_id,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 // Initialize MongoDB connection
@@ -71,7 +71,6 @@ func init() {
 	usersCollection = client.Database("test").Collection("users")
 	log.Println("Connected to MongoDB")
 }
-
 
 func signup(w http.ResponseWriter, r *http.Request) {
 	var User user
@@ -107,7 +106,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with the created user's data
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(User)  // Return the User struct, not Booking
+	json.NewEncoder(w).Encode(User) // Return the User struct, not Booking
 }
 
 // Login function
@@ -157,12 +156,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-
-
-
 func contactus(w http.ResponseWriter, r *http.Request) {
-	
-
 
 	var contactus Contactus
 	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
@@ -182,7 +176,6 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 
 // // Booking handler
 // func BookingD(w http.ResponseWriter, r *http.Request) {
-	
 
 // 	var booking Booking
 // 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
@@ -208,66 +201,63 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 func decodeHandler(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r) // Extract URL parameters
-    tokenString, exists := vars["token"]
-    if !exists || tokenString == "" {
-        http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
-        return
-    }
+	vars := mux.Vars(r) // Extract URL parameters
+	tokenString, exists := vars["token"]
+	if !exists || tokenString == "" {
+		http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
+		return
+	}
 
-    // Parse the token
-    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-        return jwtSecret, nil
-    })
-    if err != nil || !token.Valid {
-        http.Error(w, "Invalid token", http.StatusUnauthorized)
-        return
-    }
+	// Parse the token
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
 
-    // If token is valid, respond with success
-    claims, ok := token.Claims.(*Claims)
-    if !ok {
-        http.Error(w, "Invalid token structure", http.StatusUnauthorized)
-        return
-    }
+	// If token is valid, respond with success
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		http.Error(w, "Invalid token structure", http.StatusUnauthorized)
+		return
+	}
 
-    response := map[string]interface{}{
-       
-        "Email":       claims.Email,
-        "username":    claims.Username,
-        "Password":      claims.Password,
-        "Age": claims.Age,
-        "Gender": claims.Gender,
-
-    }
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(response)
+	response := map[string]interface{}{
+"message":     "Welcome to the protected route",
+		"Email":    claims.Email,
+		"username": claims.Username,
+		"Password": claims.Password,
+		"Age":      claims.Age,
+		"Gender":   claims.Gender,
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }
-
 
 // Main handler to route requests
 // Main handler to route requests
 func Handler(w http.ResponseWriter, r *http.Request) {
-    router := mux.NewRouter()
+	router := mux.NewRouter()
 
-    // Define routes for signup, login, and other actions
-    router.HandleFunc("/", helloHandler).Methods("GET")
-    router.HandleFunc("/signup", signup).Methods("POST") // No verification here
-    router.HandleFunc("/login", login).Methods("POST")
-    router.HandleFunc("/contactus", contactus).Methods("POST")
-    router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("POST")
+	// Define routes for signup, login, and other actions
+	router.HandleFunc("/", helloHandler).Methods("GET")
+	router.HandleFunc("/signup", signup).Methods("POST") // No verification here
+	router.HandleFunc("/login", login).Methods("POST")
+	router.HandleFunc("/contactus", contactus).Methods("POST")
+	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("POST")
 
-    // router.HandleFunc("/BookingD", BookingD).Methods("POST")
+	// router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
-    // Apply CORS middleware
-    corsHandler := cors.New(cors.Options{
-        AllowedOrigins:   []string{"*"},
-        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-        AllowedHeaders:   []string{"Authorization", "Content-Type"},
-        AllowCredentials: true,
-    }).Handler(router)
+	// Apply CORS middleware
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+	}).Handler(router)
 
-    // Serve the request
-    corsHandler.ServeHTTP(w, r)
+	// Serve the request
+	corsHandler.ServeHTTP(w, r)
 }
-
