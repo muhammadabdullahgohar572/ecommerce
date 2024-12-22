@@ -175,24 +175,25 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(contactus)
 }
 
-// // Booking handler
-// func BookingD(w http.ResponseWriter, r *http.Request) {
+// Booking handler
+func BookingD(w http.ResponseWriter, r *http.Request) {
 
-// 	var booking Booking
-// 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-// 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-// 		return
-// 	}
+	var booking Booking
+	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	bookinglection := client.Database("test").Collection("booking")
 
-// 	_, err := usersCollection.InsertOne(context.TODO(), booking)
-// 	if err != nil {
-// 		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
-// 		return
-// 	}
+	_, err := bookinglection.InsertOne(context.TODO(), booking)
+	if err != nil {
+		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
+		return
+	}
 
-// 	w.WriteHeader(http.StatusCreated)
-// 	json.NewEncoder(w).Encode(booking)
-// }
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(booking)
+}
 
 // HelloHandler function
 func helloHandler(w http.ResponseWriter, r *http.Request) {
