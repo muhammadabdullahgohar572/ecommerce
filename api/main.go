@@ -50,13 +50,14 @@ var (
 	usersCollection *mongo.Collection
 )
 
+// Booking struct to represent booking data
 type Booking struct {
-	CarType         string    `json:"car_type"`
-	PickupLocation  string    `json:"pickup_location"`
-	DropoffLocation string    `json:"dropoff_location"`
-	PickupDate      string    `json:"pickup_date"`
-	PickupTime      string    `json:"pickup_time"`
-	DropoffTime     string    `json:"dropoff_time"`
+	CarType         string `json:"car_type"`
+	PickupLocation  string `json:"pickup_location"`
+	DropoffLocation string `json:"dropoff_location"`
+	PickupDate      string `json:"pickup_date"`
+	PickupTime      string `json:"pickup_time"`
+	DropoffTime     string `json:"dropoff_time"`
 }
 
 // Initialize MongoDB connection
@@ -70,6 +71,7 @@ func init() {
 	log.Println("Connected to MongoDB")
 }
 
+// BookingOrder function to handle booking requests
 func BookingOrder(w http.ResponseWriter, r *http.Request) {
 	var Booking Booking
 	if err := json.NewDecoder(r.Body).Decode(&Booking); err != nil {
@@ -80,11 +82,12 @@ func BookingOrder(w http.ResponseWriter, r *http.Request) {
 	// Log the Booking data for debugging
 	log.Printf("Received Booking data: %+v", Booking)
 
-	BookingCollection := client.Database("test").Collection("contactus")
-	
+	// Correct collection for bookings
+	BookingCollection := client.Database("test").Collection("bookings")
+
 	_, err := BookingCollection.InsertOne(context.TODO(), Booking)
 	if err != nil {
-		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
+		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
 		return
 	}
 
@@ -92,7 +95,7 @@ func BookingOrder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Booking) // Return the Booking struct
 }
 
-
+// signup function to handle user signup
 func signup(w http.ResponseWriter, r *http.Request) {
 	var User user
 
@@ -127,7 +130,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 
 	// Respond with the created user's data
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(User) // Return the User struct, not Booking
+	json.NewEncoder(w).Encode(User) // Return the User struct
 }
 
 // Login function
@@ -177,15 +180,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
+// contactus function to handle contact form submission
 func contactus(w http.ResponseWriter, r *http.Request) {
-
 	var contactus Contactus
 	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	contactCollection := client.Database("test").Collection("contactus")
-	
+
 	_, err := contactCollection.InsertOne(context.TODO(), contactus)
 	if err != nil {
 		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
@@ -196,16 +199,15 @@ func contactus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(contactus)
 }
 
-
-
-
-
+// helloHandler is a simple test endpoint
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Hello, Go from Vercel!",
 	})
 }
+
+// decodeHandler to handle token decoding
 func decodeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r) // Extract URL parameters
 	tokenString, exists := vars["token"]
@@ -231,32 +233,28 @@ func decodeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-       "message":     "Welcome to the protected route",
-		"Email":    claims.Email,
+		"message": "Welcome to the protected route",
+		"Email":   claims.Email,
 		"username": claims.Username,
 		"Password": claims.Password,
-		"Age":      claims.Age,
-		"Gender":   claims.Gender,
+		"Age":     claims.Age,
+		"Gender":  claims.Gender,
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
 // Main handler to route requests
-// Main handler to route requests
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
 	// Define routes for signup, login, and other actions
 	router.HandleFunc("/", helloHandler).Methods("GET")
-	router.HandleFunc("/signup", signup).Methods("POST") // No verification here
+	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
-	
 	router.HandleFunc("/Booking", BookingOrder).Methods("POST")
-
-	// router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
