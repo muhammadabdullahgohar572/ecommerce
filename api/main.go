@@ -251,6 +251,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Define routes for signup, login, and other actions
 	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
+
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
