@@ -1,4 +1,4 @@
-package handler
+package main
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// User struct to represent the user data
+// Structs for different data models
 type user struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -25,20 +25,25 @@ type user struct {
 	Gender   string `json:"gender"`
 }
 
-type Contactus struct {
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	Phone_Number string `json:"phone_number"`
-	Message      string `json:"message"`
+type contactUs struct {
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phone_number"`
+	Message     string `json:"message"`
 }
 
-// Claims struct represents JWT token claims
+type order struct {
+	CarType        string `json:"car_type"`
+	PickupLocation string `json:"pickup_location"`
+	DropoffLocation string `json:"dropoff_location"`
+	PickupDate     string `json:"pickup_date"`
+	PickupTime     string `json:"pickup_time"`
+	DropoffTime    string `json:"dropoff_time"`
+}
+
 type Claims struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
-	Password string `json:"password"`
-	Age      string `json:"age"`
-	Gender   string `json:"gender"`
 	jwt.StandardClaims
 }
 
@@ -48,17 +53,9 @@ var (
 	jwtSecret       = []byte("abdullah")
 	client          *mongo.Client
 	usersCollection *mongo.Collection
+	contactUsCollection *mongo.Collection
+	ordersCollection *mongo.Collection
 )
-
-// Booking struct to represent booking data
-type Booking struct {
-	CarType         string `json:"car_type"`
-	PickupLocation  string `json:"pickup_location"`
-	DropoffLocation string `json:"dropoff_location"`
-	PickupDate      string `json:"pickup_date"`
-	PickupTime      string `json:"pickup_time"`
-	DropoffTime     string `json:"dropoff_time"`
-}
 
 // Initialize MongoDB connection
 func init() {
@@ -67,74 +64,47 @@ func init() {
 	if err != nil {
 		log.Fatal("Error connecting to MongoDB:", err)
 	}
-	usersCollection = client.Database("test").Collection("users")
+	db := client.Database("test")
+	usersCollection = db.Collection("users")
+	contactUsCollection = db.Collection("contact_us")
+	ordersCollection = db.Collection("orders")
 	log.Println("Connected to MongoDB")
 }
 
-// BookingOrder function to handle booking requests
-func BookingOrder(w http.ResponseWriter, r *http.Request) {
-	var booking Booking
-	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// Log the Booking data for debugging
-	log.Printf("Received Booking data: %+v", booking)
-
-	// Correct collection for bookings
-	bookingCollection := client.Database("test").Collection("bookings")
-
-	// Insert the booking into the MongoDB collection
-	_, err := bookingCollection.InsertOne(context.TODO(), booking)
-	if err != nil {
-		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(booking) // Return the Booking struct
-}
-
-// signup function to handle user signup
+// Signup API
 func signup(w http.ResponseWriter, r *http.Request) {
 	var User user
 
-	// Decode the request body into the User struct
 	if err := json.NewDecoder(r.Body).Decode(&User); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Check if the user already exists in the database
 	var existingUser user
-	err := usersCollection.FindOne(context.TODO(), map[string]string{"email": User.Email}).Decode(&existingUser)
+	err := usersCollection.FindOne(context.TODO(), bson.M{"email": User.Email}).Decode(&existingUser)
 	if err == nil {
 		http.Error(w, "User already exists", http.StatusBadRequest)
 		return
 	}
 
-	// Hash the password
 	hashpassword, err := bcrypt.GenerateFromPassword([]byte(User.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Problem hashing password", http.StatusBadRequest)
+		http.Error(w, "Problem hashing password", http.StatusInternalServerError)
 		return
 	}
 	User.Password = string(hashpassword)
 
-	// Insert the new user into the MongoDB database
 	_, err = usersCollection.InsertOne(context.TODO(), User)
 	if err != nil {
 		http.Error(w, "Error inserting user", http.StatusInternalServerError)
 		return
 	}
 
-	// Respond with the created user's data
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(User) // Return the User struct
+	json.NewEncoder(w).Encode(User)
 }
 
-// Login function
+// Login API
 func login(w http.ResponseWriter, r *http.Request) {
 	var Loginuser user
 	if err := json.NewDecoder(r.Body).Decode(&Loginuser); err != nil {
@@ -142,7 +112,6 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find the user by email
 	var existingUser user
 	err := usersCollection.FindOne(context.TODO(), bson.M{"email": Loginuser.Email}).Decode(&existingUser)
 	if err != nil {
@@ -150,27 +119,21 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Compare the password with the stored hashed password
 	if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(Loginuser.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
 
-	// Create JWT token
-	expireAtTime := time.Now().Add(20 * time.Hour)
+	expireAt := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		Username: existingUser.Username,
 		Email:    existingUser.Email,
-		Password: existingUser.Password,
-		Age:      existingUser.Age,
-		Gender:   existingUser.Gender,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expireAtTime.Unix(),
+			ExpiresAt: expireAt.Unix(),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
 		http.Error(w, "Error creating token", http.StatusInternalServerError)
@@ -181,44 +144,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-// contactus function to handle contact form submission
-func contactus(w http.ResponseWriter, r *http.Request) {
-	var contactus Contactus
-	if err := json.NewDecoder(r.Body).Decode(&contactus); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-	contactCollection := client.Database("test").Collection("contactus")
-
-	_, err := contactCollection.InsertOne(context.TODO(), contactus)
-	if err != nil {
-		http.Error(w, "Error inserting contactus", http.StatusInternalServerError)
+// Decode Token API
+func decodeToken(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Authorization header is missing", http.StatusUnauthorized)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(contactus)
-}
-
-// helloHandler is a simple test endpoint
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Hello, Go from Vercel!",
-	})
-}
-
-// decodeHandler to handle token decoding
-func decodeHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r) // Extract URL parameters
-	tokenString, exists := vars["token"]
-	if !exists || tokenString == "" {
-		http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
-		return
-	}
-
-	// Parse the token
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(authHeader, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
 	if err != nil || !token.Valid {
@@ -226,45 +160,66 @@ func decodeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If token is valid, respond with success
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
-		http.Error(w, "Invalid token structure", http.StatusUnauthorized)
+		http.Error(w, "Could not parse claims", http.StatusUnauthorized)
 		return
 	}
 
-	response := map[string]interface{}{
-		"message": "Welcome to the protected route",
-		"Email":   claims.Email,
-		"username": claims.Username,
-		"Password": claims.Password,
-		"Age":     claims.Age,
-		"Gender":  claims.Gender,
-	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(claims)
 }
 
-// Main handler to route requests
+// Contact Us API
+func contactUsHandler(w http.ResponseWriter, r *http.Request) {
+	var contact contactUs
+	if err := json.NewDecoder(r.Body).Decode(&contact); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := contactUsCollection.InsertOne(context.TODO(), contact)
+	if err != nil {
+		http.Error(w, "Error saving contact", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Contact saved successfully"})
+}
+
+// Order Booking API
+func orderBooking(w http.ResponseWriter, r *http.Request) {
+	var Order order
+	if err := json.NewDecoder(r.Body).Decode(&Order); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := ordersCollection.InsertOne(context.TODO(), Order)
+	if err != nil {
+		http.Error(w, "Error saving order", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Order booked successfully"})
+}
+
+// Main function to set up routes and start the server
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
-
-	// Define routes for signup, login, and other actions
-	router.HandleFunc("/", helloHandler).Methods("GET")
 	router.HandleFunc("/signup", signup).Methods("POST")
 	router.HandleFunc("/login", login).Methods("POST")
-	router.HandleFunc("/contactus", contactus).Methods("POST")
-	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
-	router.HandleFunc("/Booking", BookingOrder).Methods("POST")
+	router.HandleFunc("/decode", decodeToken).Methods("GET")
+	router.HandleFunc("/contactus", contactUsHandler).Methods("POST")
+	router.HandleFunc("/orderbooking", orderBooking).Methods("POST")
 
-	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
-		AllowCredentials: true,
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
 	}).Handler(router)
 
-	// Serve the request
 	corsHandler.ServeHTTP(w, r)
 }
