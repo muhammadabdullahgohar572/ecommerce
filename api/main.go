@@ -250,7 +250,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
 
-	// router.HandleFunc("/BookingD", BookingD).Methods("POST")
+	router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
