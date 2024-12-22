@@ -45,9 +45,9 @@ type Claims struct {
 // MongoDB client and JWT secret
 var (
 	mongoURI        = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+	jwtSecret       = []byte("abdullah")
 	client          *mongo.Client
 	usersCollection *mongo.Collection
-	jwtSecret       = []byte("abdullah")
 )
 
 type Booking struct {
@@ -207,6 +207,43 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "Hello, Go from Vercel!",
 	})
 }
+func decodeHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r) // Extract URL parameters
+    tokenString, exists := vars["token"]
+    if !exists || tokenString == "" {
+        http.Error(w, "Token is missing from the URL", http.StatusUnauthorized)
+        return
+    }
+
+    // Parse the token
+    token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+        return jwtSecret, nil
+    })
+    if err != nil || !token.Valid {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
+
+    // If token is valid, respond with success
+    claims, ok := token.Claims.(*Claims)
+    if !ok {
+        http.Error(w, "Invalid token structure", http.StatusUnauthorized)
+        return
+    }
+
+    response := map[string]interface{}{
+       
+        "Email":       claims.Email,
+        "username":    claims.Username,
+        "Password":      claims.Password,
+        "Age": claims.Age,
+        "Gender": claims.Gender,
+
+    }
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(response)
+}
+
 
 // Main handler to route requests
 // Main handler to route requests
@@ -218,6 +255,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     router.HandleFunc("/signup", signup).Methods("POST") // No verification here
     router.HandleFunc("/login", login).Methods("POST")
     router.HandleFunc("/contactus", contactus).Methods("POST")
+    router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("POST")
+
     // router.HandleFunc("/BookingD", BookingD).Methods("POST")
 
     // Apply CORS middleware
