@@ -189,24 +189,24 @@ func contactUsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Order Booking API
-func orderBooking(w http.ResponseWriter, r *http.Request) {
-	var Order order
-	if err := json.NewDecoder(r.Body).Decode(&Order); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+// func orderBooking(w http.ResponseWriter, r *http.Request) {
+// 	var Order order
+// 	if err := json.NewDecoder(r.Body).Decode(&Order); err != nil {
+// 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+// 		return
+// 	}
 
-	_, err := ordersCollection.InsertOne(context.TODO(), Order)
-	if err != nil {
-		http.Error(w, "Error saving order", http.StatusInternalServerError)
-		return
-	}
+// 	_, err := ordersCollection.InsertOne(context.TODO(), Order)
+// 	if err != nil {
+// 		http.Error(w, "Error saving order", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Order booked successfully"})
-}
+// 	w.WriteHeader(http.StatusCreated)
+// 	json.NewEncoder(w).Encode(map[string]string{"message": "Order booked successfully"})
+// }
 
-// Main function to set up routes and start the server
+// // Main function to set up routes and start the server
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 	router.HandleFunc("/signup", signup).Methods("POST")
