@@ -71,12 +71,15 @@ func init() {
 }
 
 func BookingOrder(w http.ResponseWriter, r *http.Request) {
-
 	var Booking Booking
 	if err := json.NewDecoder(r.Body).Decode(&Booking); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	// Log the Booking data for debugging
+	log.Printf("Received Booking data: %+v", Booking)
+
 	BookingCollection := client.Database("test").Collection("contactus")
 	
 	_, err := BookingCollection.InsertOne(context.TODO(), Booking)
@@ -86,8 +89,9 @@ func BookingOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(Booking)
+	json.NewEncoder(w).Encode(Booking) // Return the Booking struct
 }
+
 
 func signup(w http.ResponseWriter, r *http.Request) {
 	var User user
