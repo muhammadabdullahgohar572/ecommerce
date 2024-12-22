@@ -72,28 +72,29 @@ func init() {
 }
 
 // BookingOrder function to handle booking requests
-// func BookingOrder(w http.ResponseWriter, r *http.Request) {
-// 	var Booking Booking
-// 	if err := json.NewDecoder(r.Body).Decode(&Booking); err != nil {
-// 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-// 		return
-// 	}
+func BookingOrder(w http.ResponseWriter, r *http.Request) {
+	var booking Booking
+	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
 
-// 	// Log the Booking data for debugging
-// 	log.Printf("Received Booking data: %+v", Booking)
+	// Log the Booking data for debugging
+	log.Printf("Received Booking data: %+v", booking)
 
-// 	// Correct collection for bookings
-// 	BookingCollection := client.Database("test").Collection("bookings")
+	// Correct collection for bookings
+	bookingCollection := client.Database("test").Collection("bookings")
 
-// 	_, err := BookingCollection.InsertOne(context.TODO(), Booking)
-// 	if err != nil {
-// 		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
-// 		return
-// 	}
+	// Insert the booking into the MongoDB collection
+	_, err := bookingCollection.InsertOne(context.TODO(), booking)
+	if err != nil {
+		http.Error(w, "Error inserting booking", http.StatusInternalServerError)
+		return
+	}
 
-// 	w.WriteHeader(http.StatusCreated)
-// 	json.NewEncoder(w).Encode(Booking) // Return the Booking struct
-// }
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(booking) // Return the Booking struct
+}
 
 // signup function to handle user signup
 func signup(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +255,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/contactus", contactus).Methods("POST")
 	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
-	// router.HandleFunc("/Booking", BookingOrder).Methods("POST")
+	router.HandleFunc("/Booking", BookingOrder).Methods("POST")
 
 	// Apply CORS middleware
 	corsHandler := cors.New(cors.Options{
