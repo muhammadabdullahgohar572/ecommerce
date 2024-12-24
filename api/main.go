@@ -259,7 +259,7 @@ func userAllDeatils(w http.ResponseWriter, r *http.Request) {
 	}
 	defer result.Close(context.TODO())
 
-	// Use the correct struct to hold user data
+	// Use the correct struct to hold user data (not Booking struct)
 	var users []user
 	for result.Next(context.TODO()) {
 		var u user
@@ -280,6 +280,7 @@ func userAllDeatils(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(users)
 }
+
 
 
 func Handler(w http.ResponseWriter, r *http.Request) {
