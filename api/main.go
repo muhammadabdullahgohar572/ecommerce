@@ -22,6 +22,8 @@ type user struct {
 	Password string `json:"password"`
 	Age      string `json:"age"`
 	Gender   string `json:"gender"`
+	Companyname   string `json:"Companyname"`
+
 }
 
 type Contactus struct {
