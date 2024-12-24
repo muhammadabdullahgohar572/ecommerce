@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -191,6 +190,41 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Hello, Go from Vercel!"})
 }
 
+
+func getconectus(w http.ResponseWriter, r *http.Request) {
+	conectuscollection:=client.Database("test").Collection("contacts");
+	cusor,err :=conectuscollection.Find(context.TODO(),bson.M{})
+	if err!= nil {
+        http.Error(w, "Error fetching data", http.StatusInternalServerError)
+        return
+    }
+
+   defer cusor.Close(context.TODO())
+
+   var contextus []Contactus;
+   for cusor.Next(context.TODO()) {
+        var contact Contactus
+        err := cusor.Decode(&contact)
+        if err!= nil {
+            http.Error(w, "Error decoding data", http.StatusInternalServerError)
+            return
+        }
+        contextus = append(contextus, contact)
+ 
+   }
+   if err := cusor.Err(); err != nil {
+	http.Error(w, "Error reading cursor", http.StatusInternalServerError)
+	return
+}
+
+   w.WriteHeader(http.StatusOK)
+   json.NewEncoder(w).Encode(contextus)
+
+
+
+
+}
+
 // Main handler for routing
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
@@ -201,6 +235,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/decodeHandler/{token}", decodeHandler).Methods("GET")
 	router.HandleFunc("/contact", contactUs).Methods("POST")
 	router.HandleFunc("/booking", bookingOrder).Methods("POST")
+	router.HandleFunc("/getconectus", getconectus).Methods("GET")
+
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
