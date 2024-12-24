@@ -74,6 +74,12 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Handle the case where Companyname might not be provided
+	if newUser.Companyname == "" {
+		newUser.Companyname = "N/A" // Set a default value if empty
+	}
+
+	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
@@ -81,6 +87,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	}
 	newUser.Password = string(hashedPassword)
 
+	// Insert the user into MongoDB
 	userCollection := client.Database("test").Collection("users")
 	_, err = userCollection.InsertOne(context.TODO(), newUser)
 	if err != nil {
