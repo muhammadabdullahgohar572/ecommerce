@@ -249,29 +249,30 @@ func getUserDetails(w http.ResponseWriter, r *http.Request) {
 
 func userAllDeatils(w http.ResponseWriter, r *http.Request) {
 
-	userCollection := client.Database("test").Collection("users")
-	result, err := userCollection.Find(context.TODO(), bson.M{})
-	if err != nil {
-		http.Error(w, "Error fetching data", http.StatusInternalServerError)
-		return
-	}
+	userAllDeatils:=client.Database("test").Collection("users");
+	result, err := userAllDeatils.Find(context.TODO(), bson.M{})
+	if err!= nil {
+        http.Error(w, "Error fetching data", http.StatusInternalServerError)
+        return
+    }
 	defer result.Close(context.TODO())
-	var users []user
-	for result.Next(context.TODO()) {
-		var user user
-		err := result.Decode(&user)
-		if err != nil {
-			http.Error(w, "Error decoding data", http.StatusInternalServerError)
-			return
-		}
-		users = append(users, user)
+	var bookingDetails []Booking
+
+ for result.Next(context.TODO()){
+     var booking Booking
+	 err := result.Decode(&booking)
+	 if err!= nil {
+         http.Error(w, "Error decoding data", http.StatusInternalServerError)
+         return
+     }
+	 bookingDetails = append(bookingDetails, booking)
 	}
-	if err := result.Err(); err != nil {
-		http.Error(w, "Error reading cursor", http.StatusInternalServerError)
-		return
-	}
+	if err := result.Err(); err!= nil {
+     http.Error(w, "Error reading cursor", http.StatusInternalServerError)
+     return
+    }
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(users)
+	json.NewEncoder(w).Encode(bookingDetails)
 
 }
 
