@@ -219,10 +219,52 @@ func getconectus(w http.ResponseWriter, r *http.Request) {
 
    w.WriteHeader(http.StatusOK)
    json.NewEncoder(w).Encode(contextus)
+}
 
+func getUserDetails(w http.ResponseWriter, r *http.Request) {
+	// Get the username from the URL path
+	username := mux.Vars(r)["username"]
 
+	// Fetch user data from MongoDB
+	userCollection := client.Database("test").Collection("users")
+	var userDetails user
+	err := userCollection.FindOne(context.TODO(), bson.M{"username": username}).Decode(&userDetails)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
 
+	// Fetch user's booking details
+	bookingCollection := client.Database("test").Collection("bookings")
+	cursor, err := bookingCollection.Find(context.TODO(), bson.M{"username": username})
+	if err != nil {
+		http.Error(w, "Error fetching bookings", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(context.TODO())
 
+	var bookings []Booking
+	for cursor.Next(context.TODO()) {
+		var booking Booking
+		if err := cursor.Decode(&booking); err != nil {
+			http.Error(w, "Error decoding booking", http.StatusInternalServerError)
+			return
+		}
+		bookings = append(bookings, booking)
+	}
+
+	if err := cursor.Err(); err != nil {
+		http.Error(w, "Error reading cursor", http.StatusInternalServerError)
+		return
+	}
+
+	// Return user details and bookings as JSON
+	w.WriteHeader(http.StatusOK)
+	response := map[string]interface{}{
+		"user":     userDetails,
+		"bookings": bookings,
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 // Main handler for routing
@@ -236,7 +278,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/contact", contactUs).Methods("POST")
 	router.HandleFunc("/booking", bookingOrder).Methods("POST")
 	router.HandleFunc("/getconectus", getconectus).Methods("GET")
-
+	router.HandleFunc("/user/{username}", getUserDetails).Methods("GET")
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
