@@ -3,9 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"log"
-	"net/http"
-	"time"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -13,6 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
+	"log"
+	"net/http"
+	"time"
 )
 
 // Structs
@@ -190,65 +190,91 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Hello, Go from Vercel!"})
 }
 
-
 func getconectus(w http.ResponseWriter, r *http.Request) {
-	conectuscollection:=client.Database("test").Collection("contacts");
-	cusor,err :=conectuscollection.Find(context.TODO(),bson.M{})
-	if err!= nil {
-        http.Error(w, "Error fetching data", http.StatusInternalServerError)
-        return
-    }
+	conectuscollection := client.Database("test").Collection("contacts")
+	cusor, err := conectuscollection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		http.Error(w, "Error fetching data", http.StatusInternalServerError)
+		return
+	}
 
-   defer cusor.Close(context.TODO())
+	defer cusor.Close(context.TODO())
 
-   var contextus []Contactus;
-   for cusor.Next(context.TODO()) {
-        var contact Contactus
-        err := cusor.Decode(&contact)
-        if err!= nil {
-            http.Error(w, "Error decoding data", http.StatusInternalServerError)
-            return
-        }
-        contextus = append(contextus, contact)
- 
-   }
-   if err := cusor.Err(); err != nil {
-	http.Error(w, "Error reading cursor", http.StatusInternalServerError)
-	return
-}
+	var contextus []Contactus
+	for cusor.Next(context.TODO()) {
+		var contact Contactus
+		err := cusor.Decode(&contact)
+		if err != nil {
+			http.Error(w, "Error decoding data", http.StatusInternalServerError)
+			return
+		}
+		contextus = append(contextus, contact)
 
-   w.WriteHeader(http.StatusOK)
-   json.NewEncoder(w).Encode(contextus)
+	}
+	if err := cusor.Err(); err != nil {
+		http.Error(w, "Error reading cursor", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(contextus)
 }
 
 func getUserDetails(w http.ResponseWriter, r *http.Request) {
-	bookingDeatils :=client.Database("test").Collection("bookings");
-	result,err :=bookingDeatils.Find(context.TODO(),bson.M{})
-	if err!= nil {
-        http.Error(w, "Error fetching data", http.StatusInternalServerError)
-        return
-    }
+	bookingDeatils := client.Database("test").Collection("bookings")
+	result, err := bookingDeatils.Find(context.TODO(), bson.M{})
+	if err != nil {
+		http.Error(w, "Error fetching data", http.StatusInternalServerError)
+		return
+	}
 	defer result.Close(context.TODO())
 	var bookingDetails []Booking
 	for result.Next(context.TODO()) {
 		var booking Booking
-		err :=result.Decode(&booking)
-		if err!= nil {
-            http.Error(w, "Error decoding data", http.StatusInternalServerError)
-            return
-        }
+		err := result.Decode(&booking)
+		if err != nil {
+			http.Error(w, "Error decoding data", http.StatusInternalServerError)
+			return
+		}
 		bookingDetails = append(bookingDetails, booking)
 	}
-	if err := result.Err(); err!= nil {
-    http.Error(w, "Error reading cursor", http.StatusInternalServerError)
-    return
+	if err := result.Err(); err != nil {
+		http.Error(w, "Error reading cursor", http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(bookingDetails)
 
 }
 
-// Main handler for routing
+func userAllDeatils(w http.ResponseWriter, r *http.Request) {
+
+	userCollection := client.Database("test").Collection("users")
+	result, err := userCollection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		http.Error(w, "Error fetching data", http.StatusInternalServerError)
+		return
+	}
+	defer result.Close(context.TODO())
+	var users []user
+	for result.Next(context.TODO()) {
+		var user user
+		err := result.Decode(&user)
+		if err != nil {
+			http.Error(w, "Error decoding data", http.StatusInternalServerError)
+			return
+		}
+		users = append(users, user)
+	}
+	if err := result.Err(); err != nil {
+		http.Error(w, "Error reading cursor", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(users)
+
+}
+
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
 
@@ -259,7 +285,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/contact", contactUs).Methods("POST")
 	router.HandleFunc("/booking", bookingOrder).Methods("POST")
 	router.HandleFunc("/getconectus", getconectus).Methods("GET")
-router.HandleFunc("/getUserDetails", getUserDetails).Methods("GET")
+	router.HandleFunc("/getUserDetails", getUserDetails).Methods("GET")
+	router.HandleFunc("/userAllDeatils", getUserDetails).Methods("GET")
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
