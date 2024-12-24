@@ -248,33 +248,39 @@ func getUserDetails(w http.ResponseWriter, r *http.Request) {
 }
 
 func userAllDeatils(w http.ResponseWriter, r *http.Request) {
-
-	userAllDeatils:=client.Database("test").Collection("users");
-	result, err := userAllDeatils.Find(context.TODO(), bson.M{})
-	if err!= nil {
-        http.Error(w, "Error fetching data", http.StatusInternalServerError)
-        return
-    }
-	defer result.Close(context.TODO())
-	var bookingDetails []Booking
-
- for result.Next(context.TODO()){
-     var booking user
-	 err := result.Decode(&booking)
-	 if err!= nil {
-         http.Error(w, "Error decoding data", http.StatusInternalServerError)
-         return
-     }
-	 bookingDetails = append(bookingDetails, booking)
+	// Correct collection name for user data
+	userCollection := client.Database("test").Collection("users")
+	
+	// Fetch data from the users collection
+	result, err := userCollection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		http.Error(w, "Error fetching data", http.StatusInternalServerError)
+		return
 	}
-	if err := result.Err(); err!= nil {
-     http.Error(w, "Error reading cursor", http.StatusInternalServerError)
-     return
-    }
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(bookingDetails)
+	defer result.Close(context.TODO())
 
+	// Use the correct struct to hold user data
+	var users []user
+	for result.Next(context.TODO()) {
+		var u user
+		err := result.Decode(&u)
+		if err != nil {
+			http.Error(w, "Error decoding data", http.StatusInternalServerError)
+			return
+		}
+		users = append(users, u)
+	}
+
+	if err := result.Err(); err != nil {
+		http.Error(w, "Error reading cursor", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the user data as a JSON response
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(users)
 }
+
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	router := mux.NewRouter()
