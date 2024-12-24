@@ -287,7 +287,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router.HandleFunc("/booking", bookingOrder).Methods("POST")
 	router.HandleFunc("/getconectus", getconectus).Methods("GET")
 	router.HandleFunc("/getUserDetails", getUserDetails).Methods("GET")
-	router.HandleFunc("/userAllDeatils", getUserDetails).Methods("GET")
+	router.HandleFunc("/userAllDeatils", userAllDeatils).Methods("GET")
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
