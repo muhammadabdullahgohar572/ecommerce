@@ -259,7 +259,7 @@ func userAllDeatils(w http.ResponseWriter, r *http.Request) {
 	var bookingDetails []Booking
 
  for result.Next(context.TODO()){
-     var booking Booking
+     var booking user
 	 err := result.Decode(&booking)
 	 if err!= nil {
          http.Error(w, "Error decoding data", http.StatusInternalServerError)
