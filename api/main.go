@@ -52,7 +52,7 @@ type Claims struct {
 
 // MongoDB connection details
 var (
-	mongoURI = "mongodb+srv://usertest:test44@cluster0.cyc7p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+	mongoURI = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 	client   *mongo.Client
 )
 
