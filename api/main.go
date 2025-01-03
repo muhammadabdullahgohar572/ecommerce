@@ -17,13 +17,12 @@ import (
 
 // Structs
 type user struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Age      string `json:"age"`
-	Gender   string `json:"gender"`
-	Companyname   string `json:"Companyname"`
-
+	Username    string `json:"username"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	Age         string `json:"age"`
+	Gender      string `json:"gender"`
+	Companyname string `json:"Companyname"`
 }
 
 type Contactus struct {
@@ -53,7 +52,7 @@ type Claims struct {
 
 // MongoDB connection details
 var (
-	mongoURI = "mongodb+srv://muhammadabdullahgohar572:ilove1382005@cluster0.kxsr5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+	mongoURI = "mongodb+srv://usertest:test44@cluster0.cyc7p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 	client   *mongo.Client
 )
 
@@ -194,10 +193,7 @@ func bookingOrder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Booking details submitted successfully"})
 }
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Hello, Go from Vercel!"})
-}
+
 
 func getconectus(w http.ResponseWriter, r *http.Request) {
 	conectuscollection := client.Database("test").Collection("contacts")
@@ -259,7 +255,7 @@ func getUserDetails(w http.ResponseWriter, r *http.Request) {
 func userAllDeatils(w http.ResponseWriter, r *http.Request) {
 	// Correct collection name for user data
 	userCollection := client.Database("test").Collection("users")
-	
+
 	// Fetch data from the users collection
 	result, err := userCollection.Find(context.TODO(), bson.M{})
 	if err != nil {
@@ -290,6 +286,12 @@ func userAllDeatils(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
+
+
+func helloHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Hello, Go from Vercel!"})
+}
 
 
 func Handler(w http.ResponseWriter, r *http.Request) {
